@@ -34,7 +34,7 @@ class GraphSettingsForm extends ConfigFormBase {
     $form['graph_key'] = [
       '#type' => 'key_select',
       '#key_filters' => ['type' => 'ms_graph_api'],
-      '#title' => $this->t('Secret key'),
+      '#title' => $this->t('MS Graph Authentication Key'),
       '#default_value' => $config->get('graph_key'),
       '#required' => TRUE,
       '#key_description' => FALSE,

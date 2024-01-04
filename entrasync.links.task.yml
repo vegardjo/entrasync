@@ -11,7 +11,7 @@ entrasync.sync_settings_tab:
   weight: 2
 
 entrasync.graph_settings_tab:
-  title: 'Tenant settings'
+  title: 'MS Graph Authentication'
   route_name: entrasync.graph_settings
   base_route: entrasync.sync_settings
   weight: 3

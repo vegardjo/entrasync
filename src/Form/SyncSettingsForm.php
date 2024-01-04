@@ -5,6 +5,7 @@ namespace Drupal\entrasync\Form;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Url;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -59,28 +60,110 @@ class SyncSettingsForm extends ConfigFormBase {
   public function buildForm(array $form, FormStateInterface $form_state) {
     $config = $this->config('entrasync.settings');
 
-    $form['retrieve_on_cron'] = [
-      '#type' => 'checkbox',
-      '#title' => $this->t('Retrieve on Cron'),
-      '#default_value' => $config->get('retrieve_on_cron', FALSE),
-      '#description' => $this->t('Enable to check for new users each time cron runs. If disabled you will need to do a <a href="/admin/config/services/entrasync/sync">manual syncronisation</a>, or invoke it via drush.'),
+    // Add custom HTML using markup type
+    $form['custom_html'] = [
+      '#type' => 'markup',
+      '#markup' => '<div class="custom-class">Your custom HTML here</div>',
     ];
 
-    // Retrieve all roles.
-    $roles = $this->entityTypeManager->getStorage('user_role')->loadMultiple();
+    $form['retrieve_on_cron'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Import new users on cron'),
+      '#default_value' => $config->get('retrieve_on_cron', FALSE),
+      '#description' => $this->t('Enable to check for new users each time cron runs. If disabled you will need
+                                  to do a <a href=":link">manual syncronisation</a>, or invoke it via drush.',
+                                  [':link' => Url::fromRoute('entrasync.manual_sync')->toString()]),
+    ];
 
-    // Exclude the 'authenticated' role.
+    // Start of Entra settings fieldset
+    $form['entra_settings_fieldset'] = [
+      '#type' => 'fieldset',
+      '#title' => $this->t('Users incoming from Entra'),
+    ];
+
+    // Add a select element for entity type to map to, per now only user is supported.
+    $entity_options = ['user' => 'User', 'node' => 'Node'];
+
+    $form['entra_settings_fieldset']['entrauser_entities'] = [
+      '#type' => 'radios',
+      '#title' => $this->t('Map Entra users to Drupal entity'),
+      '#options' => $entity_options,
+      '#default_value' => 'user',
+      '#multiple' => FALSE,
+      '#description' => $this->t('Select which Drupal entities the new users should be added to (per now only user is supported)'),
+      '#attributes' => ['disabled' => ['node']],
+    ];
+
+    // Add field mappings, to map Entra data to Drupal fields of selected entity
+    // Fields coming from Entra:
+    $entra_fields = [
+      'userprincipalname' => $this->t('User Principal Name'),
+      'displayName' => $this->t('Display Name'),
+      'givenname' => $this->t('Given Name'),
+      'surname' => $this->t('Surname'),
+      'businessphones' => $this->t('Business Phones'),
+      'mobilephone' => $this->t('Mobile Phone'),
+      'department' => $this->t('Department'),
+      'email' => $this->t('Email'),
+      'jobtitle' => $this->t('Job Title'),
+      'officelocation' => $this->t('Office Location'),
+      'id' => $this->t('ID')
+  ];
+
+    // Fetch Drupal user fields, including custom fields
+    $user_fields = \Drupal::service('entity_field.manager')->getFieldDefinitions('user', 'user');
+    $drupal_user_field_options = [];
+
+    foreach ($user_fields as $field_name => $field_definition) {
+
+      $exclude_user_fields = [
+        'uuid',
+        'uid',
+        'langcode',
+        'created',
+        'changed',
+        'access',
+        'login',
+        'status',
+        'timezone',
+        'roles',
+        'langcode',
+        'preferred_langcode',
+        'preferred_admin_langcode',
+        'init',
+        'pass',
+        'timezone',
+        'default_langcode',
+        'path',
+      ];
+
+      // Exclude certain fields like 'uuid', and include only custom fields and specific fields like 'name' and 'mail'
+      if (!in_array($field_name, $exclude_user_fields) &&
+        ($field_definition->getType() != 'entity_reference' || in_array($field_name, ['name', 'mail']))) {
+        $drupal_user_field_options[$field_name] = $field_definition->getLabel();
+      }
+    }
+
+    foreach ($entra_fields as $entra_field_key => $entra_field_label) {
+      $form['entra_settings_fieldset'][$entra_field_key] = [
+        '#type' => 'select',
+        '#title' => $this->t('Map Entra field: @entra_field', ['@entra_field' => $entra_field_label]),
+        '#options' => $drupal_user_field_options,
+        '#empty_option' => $this->t('- Select a Drupal field -'),
+      ];
+    }
+
+    // Add a select element for roles to modify on import.
+    $roles = $this->entityTypeManager->getStorage('user_role')->loadMultiple();
     unset($roles['authenticated']);
     unset($roles['anonymous']);
 
-    // Create options array for the select element.
     $role_options = [];
     foreach ($roles as $role_id => $role) {
       $role_options[$role_id] = $role->label();
     };
 
-    // Add a select element for 'modify_entrauser_roles'.
-    $form['modify_entrauser_roles'] = [
+    $form['entra_settings_fieldset']['modify_entrauser_roles'] = [
       '#type' => 'select',
       '#title' => $this->t('Modify roles on Entra users'),
       '#options' => $role_options,
@@ -89,6 +172,19 @@ class SyncSettingsForm extends ConfigFormBase {
       '#description' => $this->t('Select which roles the new users should or should not have'),
     ];
 
+    // Add a select element to chose initial state of the imported user.
+    $user_status_options = ['blocked' => 'Blocked', 'active' => 'Active'];
+
+    $form['entra_settings_fieldset']['entrauser_status'] = [
+      '#type' => 'radios',
+      '#title' => $this->t('Initial state of imported user'),
+      '#options' => $user_status_options,
+      '#default_value' => 'blocked',
+      '#multiple' => FALSE,
+      '#description' => $this->t('Select wether the user should be imported as blocked or active. Note that if active welcome e-mails may be sent out.'),
+    ];
+
+
     return parent::buildForm($form, $form_state);
   }
 
@@ -96,28 +192,39 @@ class SyncSettingsForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
+    // cron settings handling
     $this->config('entrasync.settings')
       ->set('retrieve_on_cron', $form_state->getValue('retrieve_on_cron'))
       ->save();
 
-    // Retrieve the selected values for your custom roles
-    // configurations from the form state.
+    // Map to Drupal entity settings handling
+    $mapped_drupal_entity = $form_state->getValue('entrauser_entities');
+    $mapped_drupal_entity = (array) ($mapped_drupal_entity);
+
+    $this->config('entrasync.settings')
+      ->set('mapped_drupal_entities', $mapped_drupal_entity);
+
+    // Field mapping on user settings handling
+    // todo
+
+    // Role settings handling
     $modify_entrauser_roles = $form_state->getValue('modify_entrauser_roles');
     $modify_drupaluser_roles = $form_state->getValue('modify_drupaluser_roles');
+    $modify_entrauser_roles = empty($modify_entrauser_roles) ? [] : $modify_entrauser_roles;
+    $modify_drupaluser_roles = empty($modify_drupaluser_roles) ? [] : $modify_drupaluser_roles;
 
-    dsm($modify_entrauser_roles, 'her er arr');
-
-    // Ensure these are saved as arrays, even if empty.
-    $modify_entrauser_roles = empty($modify_entrauser_roles) ? [] : array_flip($modify_entrauser_roles);
-    $modify_drupaluser_roles = empty($modify_drupaluser_roles) ? [] : array_flip($modify_drupaluser_roles);
-
-    dsm($modify_entrauser_roles, 'kh');
-
-    // Save the configurations.
     $this->config('entrasync.settings')
       ->set('modify_entrauser_roles', array_keys($modify_entrauser_roles))
-      ->set('modify_drupaluser_roles', array_keys($modify_drupaluser_roles))
+      // ->set('modify_drupaluser_roles', array_keys($modify_drupaluser_roles))
       ->save();
+
+    // Initial user state handling (blocked or active)
+    $entrauser_status = $form_state->getValue('entrauser_status');
+
+    $this->config('entrasync.settings')
+      ->set('entrauser_status', $entrauser_status)
+      ->save();
+
     parent::submitForm($form, $form_state);
   }
 
