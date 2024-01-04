@@ -4,11 +4,12 @@ namespace Drupal\entrasync\Form;
 
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Url;
 
 /**
  * Form handler for the Entrasync tenant settings.
  */
-class TenantSettingsForm extends ConfigFormBase {
+class GraphSettingsForm extends ConfigFormBase {
 
   /**
    * {@inheritdoc}
@@ -36,6 +37,8 @@ class TenantSettingsForm extends ConfigFormBase {
       '#title' => $this->t('Secret key'),
       '#default_value' => $config->get('graph_key'),
       '#required' => TRUE,
+      '#key_description' => FALSE,
+      '#description' => t('Choose an available key. If the desired key is not listed, <a href=":link">create a new key</a> of type "MS Graph API Key".', [':link' => Url::fromRoute('entity.key.add_form')->toString()]),
     ];
 
     return parent::buildForm($form, $form_state);

@@ -57,8 +57,8 @@ class AdminPageController extends ControllerBase {
    * @return array
    *   A render array representing the tenant settings form.
    */
-  public function tenantSettings() : Array {
-    return $this->formBuilder->getForm('Drupal\entrasync\Form\TenantSettingsForm');
+  public function graphSettings() : Array {
+    return $this->formBuilder->getForm('Drupal\entrasync\Form\GraphSettingsForm');
   }
 
   /**

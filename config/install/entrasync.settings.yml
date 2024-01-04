@@ -1,4 +1,4 @@
-graph_key: ''
+graph_key: 'ms_graph_api_default_key'
 retrieve_on_cron: ''
 modify_entrauser_roles: []
 modify_drupaluser_roles: []

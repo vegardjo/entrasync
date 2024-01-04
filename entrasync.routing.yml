@@ -1,7 +1,7 @@
 entrasync.graph_settings:
   path: '/admin/config/services/entrasync/graph-settings'
   defaults:
-    _controller: '\Drupal\entrasync\Controller\AdminPageController::tenantSettings'
+    _controller: '\Drupal\entrasync\Controller\AdminPageController::graphSettings'
     _title: 'MS Graph Autentication'
   requirements:
     _permission: 'administer entra graph settings'
