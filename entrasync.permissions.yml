@@ -1,0 +1,11 @@
+administer entra tenant settings:
+  title: 'Administer Microsoft Entra tenant settings'
+  description: 'Access the tenant settings page.'
+
+administer entra sync settings:
+  title: 'Administer Entra sync settings'
+  description: 'Access the sync settings page.'
+
+perform manual entra sync:
+  title: 'Perform manual Entra sync'
+  description: 'Sync data between MS Entra and Drupal manually'

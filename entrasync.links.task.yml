@@ -1,0 +1,17 @@
+entrasync.tenant_settings_tab:
+  title: 'Tenant settings'
+  route_name: entrasync.tenant_settings
+  base_route: entrasync.sync_settings
+  weight: 1
+
+entrasync.sync_settings_tab:
+  title: 'Synchronisation settings'
+  route_name: entrasync.sync_settings
+  base_route: entrasync.sync_settings
+  weight: 2
+
+entrasync.manual_sync_tab:
+  title: 'Manual Synchronisation'
+  route_name: entrasync.manual_sync
+  base_route: entrasync.sync_settings
+  weight: 3

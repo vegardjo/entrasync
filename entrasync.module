@@ -1,0 +1,17 @@
+<?php
+
+/**
+ * @file
+ * Contains hooks etc for Entrasync.
+ */
+
+/**
+ * Implements hook_cron().
+ */
+function entrasync_cron() {
+  $config = \Drupal::config('entrasync.settings');
+
+  if ($config->get('retrieve_on_cron')) {
+    \Drupal::service('entrasync.entra_sync')->fullSync();
+  }
+}

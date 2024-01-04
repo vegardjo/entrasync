@@ -1,0 +1,15 @@
+services:
+  # entrasync.microsoft_graph_api_client:
+  #   class: Drupal\entrasync\Services\MicrosoftGraphApiClient
+  #   arguments:
+  #     - '@key.repository'
+  #     - '@config.factory'
+  entrasync.entra_sync:
+    class: Drupal\entrasync\Services\EntraSync
+    arguments:
+      - '@entity_type.manager'
+      - '@ms_graph_api.graph.factory'
+      - '@queue'
+      - '@messenger'
+      - '@logger.factory'
+      - '@config.factory'

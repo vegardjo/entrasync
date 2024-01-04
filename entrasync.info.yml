@@ -1,0 +1,7 @@
+name: 'Microsoft Entra User Sync'
+type: module
+description: 'Utility module to sync users in Microsoft Entra with users in Drupal'
+package: Custom
+dependencies:
+  - ms_graph_api:ms_graph_api
+core_version_requirement: ^10

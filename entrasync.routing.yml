@@ -1,0 +1,21 @@
+entrasync.tenant_settings:
+  path: '/admin/config/services/entrasync/tenant-settings'
+  defaults:
+    _controller: '\Drupal\entrasync\Controller\AdminPageController::tenantSettings'
+    _title: 'Microsoft Entra Tenant Settings'
+  requirements:
+    _permission: 'administer entra tenant settings'
+entrasync.sync_settings:
+  path: '/admin/config/services/entrasync/sync-settings'
+  defaults:
+    _controller: '\Drupal\entrasync\Controller\AdminPageController::syncSettings'
+    _title: 'Entra sync Settings'
+  requirements:
+    _permission: 'administer entra sync settings'
+entrasync.manual_sync:
+  path: '/admin/config/services/entrasync/sync'
+  defaults:
+    _controller: '\Drupal\entrasync\Controller\AdminPageController::manualSync'
+    _title: 'Manual Sync'
+  requirements:
+    _permission: 'perform manual entra sync'

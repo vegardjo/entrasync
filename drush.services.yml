@@ -1,0 +1,5 @@
+services:
+  entrasync.commands:
+    class: \Drupal\entrasync\Commands\EntraSyncCommands
+    tags:
+      - { name: drush.command }
