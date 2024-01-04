@@ -1,11 +1,11 @@
-administer entra tenant settings:
-  title: 'Administer Microsoft Entra tenant settings'
-  description: 'Access the tenant settings page.'
+administer entra graph settings:
+  title: 'Administer Microsoft Entra graph settings'
+  description: 'Access the graph authentication settings page.'
 
 administer entra sync settings:
   title: 'Administer Entra sync settings'
-  description: 'Access the sync settings page.'
+  description: '<em>Warning! This grants permission to alter all roles and statuses for users, and should only be given to trusted roles.</em>'
 
 perform manual entra sync:
-  title: 'Perform manual Entra sync'
-  description: 'Sync data between MS Entra and Drupal manually'
+  title: 'Synchronize users manually'
+  description: 'Sync data between MS Entra and Drupal manually. <em>Warning! should only be given to trusted roles.</em>'

@@ -2,13 +2,13 @@ entrasync.admin_settings:
   title: 'Microsoft Entra Synchronisation Settings'
   description: 'Configure MS tenant, sync settings and perform manual synchronisation.'
   parent: system.admin_config_services
-  route_name: entrasync.tenant_settings
+  route_name: entrasync.manual_sync
   weight: 100
 
-entrasync.tenant_settings:
-  title: 'Entra Tenant Settings'
+entrasync.manual_sync:
+  title: 'Manual Entra Synchronisation'
   parent: entrasync.admin_settings
-  route_name: entrasync.tenant_settings
+  route_name: entrasync.manual_sync
   weight: 1
 
 entrasync.sync_settings:
@@ -17,8 +17,8 @@ entrasync.sync_settings:
   route_name: entrasync.sync_settings
   weight: 2
 
-entrasync.manual_sync:
-  title: 'Manual Entra Synchronisation'
+entrasync.graph_settings:
+  title: 'Entra Tenant Settings'
   parent: entrasync.admin_settings
-  route_name: entrasync.manual_sync
+  route_name: entrasync.graph_settings
   weight: 3

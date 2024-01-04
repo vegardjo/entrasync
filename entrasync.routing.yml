@@ -1,10 +1,10 @@
-entrasync.tenant_settings:
-  path: '/admin/config/services/entrasync/tenant-settings'
+entrasync.graph_settings:
+  path: '/admin/config/services/entrasync/graph-settings'
   defaults:
     _controller: '\Drupal\entrasync\Controller\AdminPageController::tenantSettings'
-    _title: 'Microsoft Entra Tenant Settings'
+    _title: 'MS Graph Autentication'
   requirements:
-    _permission: 'administer entra tenant settings'
+    _permission: 'administer entra graph settings'
 entrasync.sync_settings:
   path: '/admin/config/services/entrasync/sync-settings'
   defaults:
