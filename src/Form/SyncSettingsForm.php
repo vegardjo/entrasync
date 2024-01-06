@@ -72,12 +72,6 @@ class SyncSettingsForm extends ConfigFormBase {
   public function buildForm(array $form, FormStateInterface $form_state) {
     $config = $this->config('entrasync.settings');
 
-    // Add custom HTML using markup type
-    $form['custom_html'] = [
-      '#type' => 'markup',
-      '#markup' => '<h2>Your custom HTML here</h2>',
-    ];
-
     $form['retrieve_on_cron'] = [
       '#type' => 'checkbox',
       '#title' => $this->t('Import new users on cron'),
@@ -120,41 +114,60 @@ class SyncSettingsForm extends ConfigFormBase {
       'jobtitle' => $this->t('Job Title'),
       'officelocation' => $this->t('Office Location'),
       'id' => $this->t('ID')
-  ];
+    ];
 
     // Fetch Drupal user fields, including custom fields
     $user_fields = $this->entityFieldManager->getFieldDefinitions('user', 'user');
+
+    // Exclude certain fields like 'uuid', and include only custom fields and specific fields like 'name' and 'mail'
+    $exclude_user_fields = [
+      'name',
+      'mail',
+      'uuid',
+      'uid',
+      'langcode',
+      'created',
+      'changed',
+      'access',
+      'login',
+      'status',
+      'timezone',
+      'roles',
+      'langcode',
+      'preferred_langcode',
+      'preferred_admin_langcode',
+      'init',
+      'pass',
+      'timezone',
+      'default_langcode',
+      'path',
+    ];
+
+    // Initiate options array
     $drupal_user_field_options = [];
 
     foreach ($user_fields as $field_name => $field_definition) {
-
-      $exclude_user_fields = [
-        'uuid',
-        'uid',
-        'langcode',
-        'created',
-        'changed',
-        'access',
-        'login',
-        'status',
-        'timezone',
-        'roles',
-        'langcode',
-        'preferred_langcode',
-        'preferred_admin_langcode',
-        'init',
-        'pass',
-        'timezone',
-        'default_langcode',
-        'path',
-      ];
-
-      // Exclude certain fields like 'uuid', and include only custom fields and specific fields like 'name' and 'mail'
       if (!in_array($field_name, $exclude_user_fields) &&
         ($field_definition->getType() != 'entity_reference' || in_array($field_name, ['name', 'mail']))) {
         $drupal_user_field_options[$field_name] = $field_definition->getLabel();
       }
     }
+
+    // Info about mandatory mappings
+    $mandatory_mappings_message = '<p><strong>Mandatory field mappings</strong>
+
+                                  <p>The <em>User Principal Name (UPN)</em> is mapped to the
+                                  <em>Drupal user name</em>. This is the id from Entra, and changing it
+                                  will impact the functionality of the module.</p>
+
+                                  <p>The <em>email</em> field from Entra is often the same as the UPS,
+                                  and is mapped to the Drupal email field.</p>';
+
+
+    $form['entra_settings_fieldset']['mandatory_mappings_html'] = [
+      '#type' => 'markup',
+      '#markup' => $mandatory_mappings_message,
+    ];
 
     foreach ($entra_fields as $entra_field_key => $entra_field_label) {
       $form['entra_settings_fieldset'][$entra_field_key] = [
