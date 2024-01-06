@@ -2,6 +2,8 @@
 
 namespace Drupal\entrasync\Form;
 
+use Drupal\Core\Entity\EntityFieldManager;
+use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
@@ -20,6 +22,13 @@ class SyncSettingsForm extends ConfigFormBase {
    * @var \Drupal\Core\Entity\EntityTypeManagerInterface
    */
   protected $entityTypeManager;
+
+  /**
+   * The entity field manager service.
+   *
+   * @var \Drupal\Core\Entity\EntityFieldManagerInterface
+   */
+  protected $entityFieldManager;
 
   /**
    * {@inheritdoc}
@@ -41,8 +50,10 @@ class SyncSettingsForm extends ConfigFormBase {
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
    *   The entity type manager.
    */
-  public function __construct(EntityTypeManagerInterface $entity_type_manager) {
-    $this->entityTypeManager = $entity_type_manager;
+  public function __construct(EntityTypeManagerInterface $entityTypeManager,
+                              EntityFieldManagerInterface $entityFieldManager) {
+    $this->entityTypeManager = $entityTypeManager;
+    $this->entityFieldManager = $entityFieldManager;
   }
 
   /**
@@ -50,7 +61,8 @@ class SyncSettingsForm extends ConfigFormBase {
    */
   public static function create(ContainerInterface $container) {
     return new static(
-      $container->get('entity_type.manager')
+      $container->get('entity_type.manager'),
+      $container->get('entity_field.manager')
     );
   }
 
@@ -63,7 +75,7 @@ class SyncSettingsForm extends ConfigFormBase {
     // Add custom HTML using markup type
     $form['custom_html'] = [
       '#type' => 'markup',
-      '#markup' => '<div class="custom-class">Your custom HTML here</div>',
+      '#markup' => '<h2>Your custom HTML here</h2>',
     ];
 
     $form['retrieve_on_cron'] = [
@@ -111,7 +123,7 @@ class SyncSettingsForm extends ConfigFormBase {
   ];
 
     // Fetch Drupal user fields, including custom fields
-    $user_fields = \Drupal::service('entity_field.manager')->getFieldDefinitions('user', 'user');
+    $user_fields = $this->entityFieldManager->getFieldDefinitions('user', 'user');
     $drupal_user_field_options = [];
 
     foreach ($user_fields as $field_name => $field_definition) {
@@ -183,7 +195,6 @@ class SyncSettingsForm extends ConfigFormBase {
       '#multiple' => FALSE,
       '#description' => $this->t('Select wether the user should be imported as blocked or active. Note that if active welcome e-mails may be sent out.'),
     ];
-
 
     return parent::buildForm($form, $form_state);
   }
