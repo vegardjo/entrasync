@@ -7,6 +7,11 @@
 
 /**
  * Implements hook_cron().
+ *
+ * This will queue potentially new users on both sites to the queueworkers, and
+ * queueworkers are also processed on cron.
+ *
+ * @todo Race? Check if we could get some kind of race condition here.
  */
 function entrasync_cron() {
   $config = \Drupal::config('entrasync.settings');

@@ -59,6 +59,7 @@ class EntraUserProcessor extends QueueWorkerBase implements ContainerFactoryPlug
   protected $passwordGenerator;
 
   public function __construct(ConfigFactoryInterface $configFactory, LoggerChannelFactoryInterface $loggerFactory, PasswordGeneratorInterface $passwordGenerator) {
+    $this->configFactory = $configFactory;
     $this->config = $configFactory->get('entrasync.settings');
     $this->logger = $loggerFactory->get('entrasync');
     $this->passwordGenerator = $passwordGenerator;
@@ -98,9 +99,15 @@ class EntraUserProcessor extends QueueWorkerBase implements ContainerFactoryPlug
           $user->addRole($role_id);
         }
 
+        /**
+        * @todo This has a setting that is not respected yet
+        */
         // Set the user as active.
         $user->activate();
 
+        /**
+        * @todo This should be a conditional setting
+        */
         // Temporarily disable email notification.
         $original_mail_notify = $this->configFactory->getEditable('user.settings')->get('notify');
         $this->configFactory->getEditable('user.settings')->set('notify', 0)->save();
@@ -111,6 +118,10 @@ class EntraUserProcessor extends QueueWorkerBase implements ContainerFactoryPlug
         // Restore original email notification settings.
         $this->configFactory->getEditable('user.settings')->set('notify', $original_mail_notify)->save();
 
+
+        /**
+        * @todo This has a setting that is not respected yet
+        */
         // Custom user fields.
         $user->set('field_fornavn', $data['displayName']);
         $user->set('field_etternavn', $data['givenname']);
@@ -126,6 +137,9 @@ class EntraUserProcessor extends QueueWorkerBase implements ContainerFactoryPlug
       }
     }
     else {
+    /**
+      * @todo This is not logging anything for some reason
+      */
       $this->logger->notice('User already exists with email: ' . $data['email']);
     }
   }
