@@ -36,11 +36,20 @@ class EntraUserProcessor extends QueueWorkerBase implements ContainerFactoryPlug
   protected $loggerFactory;
 
   /**
-   * The logger channel.
+   * The logger.
    *
    * @var \Drupal\Core\Logger\LoggerChannelInterface
    */
   protected $logger;
+
+  /**
+   * The config.
+   *
+   * @var use Drupal\Core\Config\ConfigFactoryInterface;
+
+   */
+  protected $config;
+
 
   /**
    * The password generator.
@@ -50,7 +59,7 @@ class EntraUserProcessor extends QueueWorkerBase implements ContainerFactoryPlug
   protected $passwordGenerator;
 
   public function __construct(ConfigFactoryInterface $configFactory, LoggerChannelFactoryInterface $loggerFactory, PasswordGeneratorInterface $passwordGenerator) {
-    $this->configFactory = $configFactory;
+    $this->config = $configFactory->get('entrasync.settings');
     $this->logger = $loggerFactory->get('entrasync');
     $this->passwordGenerator = $passwordGenerator;
   }
@@ -68,8 +77,7 @@ class EntraUserProcessor extends QueueWorkerBase implements ContainerFactoryPlug
    */
   public function processItem($data) {
     // Retrieve the configuration for roles.
-    $config = \Drupal::config('entrasync.settings');
-    $roles_to_modify = $config->get('modify_entrauser_roles');
+    $roles_to_modify = $this->config->get('modify_entrauser_roles');
 
     // Check if user already exists by email.
     $users = user_load_by_mail($data['email']);
@@ -80,7 +88,7 @@ class EntraUserProcessor extends QueueWorkerBase implements ContainerFactoryPlug
         $user = User::create();
 
         // Mandatory settings.
-        $user->setPassword(\Drupal::service('password_generator')->generate());
+        $user->setPassword($this->passwordGenerator->generate());
         $user->enforceIsNew();
         $user->setEmail($data['email']);
         $user->setUsername($data['userprincipalname']);
