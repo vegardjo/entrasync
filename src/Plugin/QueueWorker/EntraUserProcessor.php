@@ -2,8 +2,13 @@
 
 namespace Drupal\entrasync\Plugin\QueueWorker;
 
+use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\Core\Logger\LoggerChannelFactoryInterface;
+use Drupal\Core\Password\PasswordGeneratorInterface;
+use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\Queue\QueueWorkerBase;
 use Drupal\user\Entity\User;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Processes Entra users.
@@ -14,7 +19,49 @@ use Drupal\user\Entity\User;
  *   cron = {"time" = 60}
  * )
  */
-class EntraUserProcessor extends QueueWorkerBase {
+class EntraUserProcessor extends QueueWorkerBase implements ContainerFactoryPluginInterface {
+
+  /**
+   * The config factory.
+   *
+   * @var \Drupal\Core\Config\ConfigFactoryInterface
+   */
+  protected $configFactory;
+
+  /**
+   * The logger factory.
+   *
+   * @var \Drupal\Core\Logger\LoggerChannelFactoryInterface
+   */
+  protected $loggerFactory;
+
+  /**
+   * The logger channel.
+   *
+   * @var \Drupal\Core\Logger\LoggerChannelInterface
+   */
+  protected $logger;
+
+  /**
+   * The password generator.
+   *
+   * @var \Drupal\Core\Password\PasswordGeneratorInterface
+   */
+  protected $passwordGenerator;
+
+  public function __construct(ConfigFactoryInterface $configFactory, LoggerChannelFactoryInterface $loggerFactory, PasswordGeneratorInterface $passwordGenerator) {
+    $this->configFactory = $configFactory;
+    $this->logger = $loggerFactory->get('entrasync');
+    $this->passwordGenerator = $passwordGenerator;
+  }
+
+  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
+    return new static(
+      $container->get('config.factory'),
+      $container->get('logger.factory'),
+      $container->get('password_generator')
+    );
+  }
 
   /**
    * {@inheritdoc}
@@ -47,14 +94,14 @@ class EntraUserProcessor extends QueueWorkerBase {
         $user->activate();
 
         // Temporarily disable email notification.
-        $original_mail_notify = \Drupal::configFactory()->getEditable('user.settings')->get('notify');
-        \Drupal::configFactory()->getEditable('user.settings')->set('notify', 0)->save();
+        $original_mail_notify = $this->configFactory->getEditable('user.settings')->get('notify');
+        $this->configFactory->getEditable('user.settings')->set('notify', 0)->save();
 
         // Save user.
         $user->save();
 
         // Restore original email notification settings.
-        \Drupal::configFactory()->getEditable('user.settings')->set('notify', $original_mail_notify)->save();
+        $this->configFactory->getEditable('user.settings')->set('notify', $original_mail_notify)->save();
 
         // Custom user fields.
         $user->set('field_fornavn', $data['displayName']);
@@ -64,14 +111,14 @@ class EntraUserProcessor extends QueueWorkerBase {
         // Save user account.
         $user->save();
 
-        \Drupal::logger('entrasync')->notice('Created new user with ID: ' . $user->id());
+        $this->logger->notice('Created new user with ID: ' . $user->id());
       }
       catch (\Exception $e) {
-        \Drupal::logger('entrasync')->error('User creation failed: ' . $e->getMessage());
+        $this->logger->error('User creation failed: ' . $e->getMessage());
       }
     }
     else {
-      \Drupal::logger('entrasync')->notice('User already exists with email: ' . $data['email']);
+      $this->logger->notice('User already exists with email: ' . $data['email']);
     }
   }
 
