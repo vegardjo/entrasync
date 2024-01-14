@@ -60,7 +60,9 @@ class EntraUserProcessor extends QueueWorkerBase implements ContainerFactoryPlug
   /**
    * {@inheritdoc}
    */
-  public function __construct(ConfigFactoryInterface $configFactory, LoggerChannelFactoryInterface $loggerFactory, PasswordGeneratorInterface $passwordGenerator) {
+  public function __construct(ConfigFactoryInterface $configFactory,
+                              LoggerChannelFactoryInterface $loggerFactory,
+                              PasswordGeneratorInterface $passwordGenerator) {
     $this->configFactory = $configFactory;
     $this->config = $configFactory->get('entrasync.settings');
     $this->logger = $loggerFactory->get('entrasync');
@@ -120,28 +122,25 @@ class EntraUserProcessor extends QueueWorkerBase implements ContainerFactoryPlug
           $user->addRole($role_id);
         }
 
-        /*
-         * @todo This has a setting that is not respected yet
-         */
-        // Set the user as active.
-        $user->activate();
+        // Default state is blocked.
+        if ($this->config->get('entrauser_status') === 'active') {
+          $user->activate();
+          if (!$this->config->get('send_mail_on_activate')) {
+            // If don't send email:
+            // Temporarily disable email notification.
+            $original_mail_notify = $this->configFactory->getEditable('user.settings')->get('notify');
+            $this->configFactory->getEditable('user.settings')->set('notify', 0)->save();
 
-        /*
-         * @todo This should be a conditional setting
-         */
-        // Temporarily disable email notification.
-        $original_mail_notify = $this->configFactory->getEditable('user.settings')->get('notify');
-        $this->configFactory->getEditable('user.settings')->set('notify', 0)->save();
+            // Save user.
+            $user->save();
 
-        // Save user.
-        $user->save();
-
-        // Restore original email notification settings.
-        $this->configFactory->getEditable('user.settings')->set('notify', $original_mail_notify)->save();
-
-        // Save user account.
-        $user->save();
-
+            // Restore original email notification settings.
+            $this->configFactory->getEditable('user.settings')->set('notify', $original_mail_notify)->save();
+          }
+        }
+        else {
+          $user->save();
+        }
         $this->logger->notice('Created new user with ID: ' . $user->id());
       }
       catch (\Exception $e) {
@@ -150,7 +149,6 @@ class EntraUserProcessor extends QueueWorkerBase implements ContainerFactoryPlug
     }
     else {
       /*
-       *
        * @todo This is not logging anything for some reason
        */
       $this->logger->notice('User already exists with email: ' . $data['email']);

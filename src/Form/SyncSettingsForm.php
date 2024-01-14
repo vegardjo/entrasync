@@ -257,6 +257,18 @@ class SyncSettingsForm extends ConfigFormBase {
       '#description' => $this->t('Select wether the user should be imported as blocked or active. Note that if active welcome e-mails may be sent out.'),
     ];
 
+    $form['entrauser_settings']['send_mail_on_activate'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Send activation e-mail when creating user'),
+      '#default_value' => $config->get('send_mail_on_activate', FALSE),
+      '#states' => [
+        'visible' => [
+          ':input[name="entrauser_status"]' => ['value' => 'active'],
+        ],
+      ],
+      '#description' => $this->t('By default your system will send a welcome mail to new users. This is deactivated by default here. Check to restore default functionality and send welcome e-mails.'),
+    ];
+
     // $form['drupaluser_settings']['deyo'] = [
     //   '#type' => 'radios',
     //   '#title' => $this->t('lalal'),
@@ -330,6 +342,10 @@ class SyncSettingsForm extends ConfigFormBase {
     // Initial user state handling (blocked or active)
     $entrauser_status = $form_state->getValue('entrauser_status');
     $config->set('entrauser_status', $entrauser_status);
+
+    // E-mail settings if user is set to active
+    $email_on_active = $form_state->getValue('send_mail_on_activate');
+    $config->set('send_mail_on_activate', $email_on_active);
 
     // Save all set config
     $config->save();
