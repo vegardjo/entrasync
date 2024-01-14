@@ -65,6 +65,26 @@ class SyncSettingsForm extends ConfigFormBase {
     );
   }
 
+/**
+ * Extracts user field mappings from form state.
+ *
+ * @param FormStateInterface $form_state
+ *   The form state object.
+ *
+ * @return array
+ *   An associative array of user field mappings.
+ */
+  protected function getUserFieldMappingsFromFormState(FormStateInterface $form_state) {
+    $user_field_mapping = [];
+    foreach ($form_state->getValues() as $key => $value) {
+        if (strpos($key, 'user_field_to_') === 0) {
+            $entra_field = substr($key, strlen('user_field_to_'));
+            $user_field_mapping[$entra_field] = $value;
+        }
+    }
+    return $user_field_mapping;
+  }
+
   /**
    * {@inheritdoc}
    */
@@ -256,6 +276,19 @@ class SyncSettingsForm extends ConfigFormBase {
     /**
      * @todo Validate that an Entra field is not mapped to multiple Drupal fields.
      */
+
+    $user_field_mapping = $this->getUserFieldMappingsFromFormState($form_state);
+    $selected_values = [];
+     foreach ($user_field_mapping as $entra_field => $drupal_field) {
+      if (!empty($drupal_field)) {
+        if (isset($selected_values[$drupal_field])) {
+          // Set an error if the same Drupal field is selected more than once.
+          $form_state->setErrorByName('user_field_to_' . $entra_field, $this->t('The Drupal field %field is already mapped to another Entra field.', ['%field' => $drupal_field]));
+        } else {
+          $selected_values[$drupal_field] = $entra_field;
+        }
+      }
+    }
   }
 
   /**
