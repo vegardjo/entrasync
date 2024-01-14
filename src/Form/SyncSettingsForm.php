@@ -135,14 +135,14 @@ class SyncSettingsForm extends ConfigFormBase {
     // Add field mappings, to map Entra data to Drupal fields of selected entity
     // Fields coming from Entra:
     $entra_fields = [
-      'userprincipalname' => $this->t('User Principal Name'),
+      // 'userprincipalname' => $this->t('User Principal Name'),
       'displayName' => $this->t('Display Name'),
       'givenname' => $this->t('Given Name'),
       'surname' => $this->t('Surname'),
       'businessphones' => $this->t('Business Phones'),
       'mobilephone' => $this->t('Mobile Phone'),
       'department' => $this->t('Department'),
-      'email' => $this->t('Email'),
+      // 'email' => $this->t('Email'),
       'jobtitle' => $this->t('Job Title'),
       'officelocation' => $this->t('Office Location'),
       'id' => $this->t('ID')
@@ -247,36 +247,38 @@ class SyncSettingsForm extends ConfigFormBase {
   }
 
   /**
+   * {@inheritDoc}
+   */
+  public function validateForm(array &$form, FormStateInterface $form_state) {
+    /**
+     * @todo Validate that an Entra field is not mapped to multiple Drupal fields.
+     */
+  }
+
+  /**
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $config = $this->config('entrasync.settings');
-    dsm($form_state);
 
-    dsm($form_state->getValue('retrieve_on_cron'), 'cron');
     // cron settings handling
-    $config
-      ->set('retrieve_on_cron', $form_state->getValue('retrieve_on_cron'))
-      ->save();
+    $config->set('retrieve_on_cron', $form_state->getValue('retrieve_on_cron'));
 
-    // Map to Drupal entity settings handling
+    // Map to which Drupal entity settings handling
     $mapped_drupal_entity = $form_state->getValue('entrauser_entities');
     $mapped_drupal_entity = (array) ($mapped_drupal_entity);
+    $config->set('mapped_drupal_entities', $mapped_drupal_entity);
 
-    $config
-      ->set('mapped_drupal_entities', $mapped_drupal_entity);
-
-dsm($form_state->getValue('entra_fieldmapping_user'), 'null?');
-    /**
-     * @todo Nested form structure not working, need to figure out..
-     *
-     */
-
-    // Field mapping on user settings handling
-    foreach ($form_state->getValue('entra_fieldmapping_user') as $entra_field_key => $selected_drupal_field) {
-      // Store the mapping in configuration
-      $config->set('mapping.' . $entra_field_key, $selected_drupal_field);
+    // Entra fields to Drupal fields handling
+    // Extract the various Entra fields from the submitted data
+    $user_field_mapping_config = [];
+    foreach ($form_state->getValues() as $key => $value) {
+      if (strpos($key, 'user_field_to_') === 0) {
+        $entra_field = substr($key, strlen('user_field_to_'));
+        $user_field_mapping_config[$entra_field] = $value;
+      }
     }
+    $config->set('user_field_mapping', $user_field_mapping_config);
 
     // Role settings handling
     $modify_entrauser_roles = $form_state->getValue('modify_entrauser_roles');
@@ -284,17 +286,14 @@ dsm($form_state->getValue('entra_fieldmapping_user'), 'null?');
     $modify_entrauser_roles = empty($modify_entrauser_roles) ? [] : $modify_entrauser_roles;
     $modify_drupaluser_roles = empty($modify_drupaluser_roles) ? [] : $modify_drupaluser_roles;
 
-    $config
-      ->set('modify_entrauser_roles', array_keys($modify_entrauser_roles))
-      // ->set('modify_drupaluser_roles', array_keys($modify_drupaluser_roles))
-      ->save();
+    $config->set('modify_entrauser_roles', array_keys($modify_entrauser_roles));
 
     // Initial user state handling (blocked or active)
     $entrauser_status = $form_state->getValue('entrauser_status');
+    $config->set('entrauser_status', $entrauser_status);
 
-    $config
-      ->set('entrauser_status', $entrauser_status)
-      ->save();
+    // Save all set config
+    $config->save();
 
     parent::submitForm($form, $form_state);
   }
