@@ -45,8 +45,7 @@ class EntraUserProcessor extends QueueWorkerBase implements ContainerFactoryPlug
   /**
    * The config.
    *
-   * @var use Drupal\Core\Config\ConfigFactoryInterface;
-
+   * @var Drupal\Core\Config\ConfigFactoryInterface
    */
   protected $config;
 
@@ -58,6 +57,9 @@ class EntraUserProcessor extends QueueWorkerBase implements ContainerFactoryPlug
    */
   protected $passwordGenerator;
 
+  /**
+   * {@inheritdoc}
+   */
   public function __construct(ConfigFactoryInterface $configFactory, LoggerChannelFactoryInterface $loggerFactory, PasswordGeneratorInterface $passwordGenerator) {
     $this->configFactory = $configFactory;
     $this->config = $configFactory->get('entrasync.settings');
@@ -65,6 +67,9 @@ class EntraUserProcessor extends QueueWorkerBase implements ContainerFactoryPlug
     $this->passwordGenerator = $passwordGenerator;
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
     return new static(
       $container->get('config.factory'),
@@ -77,9 +82,6 @@ class EntraUserProcessor extends QueueWorkerBase implements ContainerFactoryPlug
    * {@inheritdoc}
    */
   public function processItem($data) {
-    // Retrieve the configuration for roles.
-    $roles_to_modify = $this->config->get('modify_entrauser_roles');
-
     // Check if user already exists by email.
     $users = user_load_by_mail($data['email']);
 
@@ -94,34 +96,39 @@ class EntraUserProcessor extends QueueWorkerBase implements ContainerFactoryPlug
         $user->setEmail($data['email']);
         $user->setUsername($data['userprincipalname']);
 
-        // Set custom fields
+        // Set custom fields.
         $user_field_mapping = $this->config->get('user_field_mapping');
         foreach ($user_field_mapping as $entra_field => $drupal_field) {
           if (isset($data[$entra_field]) && $data[$entra_field] !== '') {
-            // Tmp: Flatten array values to a comma-separated string, this is true for the businessPhones data
+            // Tmp: Flatten array values to a comma-separated string,
+            // this is true for the businessPhones data.
             $field_value = is_array($data[$entra_field]) ? implode(', ', $data[$entra_field]) : $data[$entra_field];
             if ($user->hasField($drupal_field)) {
               $user->set($drupal_field, $field_value);
-            } else {
+            }
+            else {
               $this->logger->error('The field ' . $drupal_field . ' does not exist on the user entity.');
             }
           }
         }
+
+        // Retrieve the configuration for roles.
+        $roles_to_modify = $this->config->get('modify_entrauser_roles');
 
         // Add roles to the new user.
         foreach ($roles_to_modify as $role_id) {
           $user->addRole($role_id);
         }
 
-        /**
-        * @todo This has a setting that is not respected yet
-        */
+        /*
+         * @todo This has a setting that is not respected yet
+         */
         // Set the user as active.
         $user->activate();
 
-        /**
-        * @todo This should be a conditional setting
-        */
+        /*
+         * @todo This should be a conditional setting
+         */
         // Temporarily disable email notification.
         $original_mail_notify = $this->configFactory->getEditable('user.settings')->get('notify');
         $this->configFactory->getEditable('user.settings')->set('notify', 0)->save();
@@ -142,9 +149,10 @@ class EntraUserProcessor extends QueueWorkerBase implements ContainerFactoryPlug
       }
     }
     else {
-    /**
-      * @todo This is not logging anything for some reason
-      */
+      /*
+       *
+       * @todo This is not logging anything for some reason
+       */
       $this->logger->notice('User already exists with email: ' . $data['email']);
     }
   }
