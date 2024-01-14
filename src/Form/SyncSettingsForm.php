@@ -72,13 +72,48 @@ class SyncSettingsForm extends ConfigFormBase {
   public function buildForm(array $form, FormStateInterface $form_state) {
     $config = $this->config('entrasync.settings');
 
-    $form['retrieve_on_cron'] = [
+    // Start of general settings details
+    $form['general_settings'] = [
+      '#type' => 'details',
+      '#title' => $this->t('General setting'),
+    ];
+
+    // Start of Entra settings details
+    $form['entrauser_settings'] = [
+      '#type' => 'details',
+      '#title' => $this->t('Settings for incoming users from Entra'),
+    ];
+
+    // Start of Drupal settings details
+    $form['drupaluser_settings'] = [
+      '#type' => 'details',
+      '#title' => $this->t('Settings for remaining Drupal users'),
+      '#description' => $this->t('Decide what to do with users that are not in Entra, but still in Drupal.
+                                  This could be users that are orphaned, or they could be legit user that should be
+                                  there. User 1 is excluded'),
+      '#description_display' => 'above',
+    ];
+
+    $form['general_settings']['retrieve_on_cron'] = [
       '#type' => 'checkbox',
       '#title' => $this->t('Import new users on cron'),
       '#default_value' => $config->get('retrieve_on_cron', FALSE),
       '#description' => $this->t('Enable to check for new users each time cron runs. If disabled you will need
                                   to do a <a href=":link">manual syncronisation</a>, or invoke it via drush.',
                                   [':link' => Url::fromRoute('entrasync.manual_sync')->toString()]),
+    ];
+
+    // Add a select element for entity type to map to, per now only user is supported.
+    $entity_options = ['user' => 'User', 'node' => 'Node'];
+
+    $form['entrauser_settings']['entrauser_entities'] = [
+      '#type' => 'radios',
+      '#title' => $this->t('Map Entra users to Drupal entity'),
+      '#options' => $entity_options,
+      '#default_value' => 'user',
+      '#multiple' => FALSE,
+      '#description' => $this->t('Select which Drupal entities the new users should be added to (per now only user is supported)'),
+      '#attributes' => ['disabled' => ['node']],
     ];
 
     // Info about mandatory mappings
@@ -91,29 +126,11 @@ class SyncSettingsForm extends ConfigFormBase {
     <p>The <em>email</em> field from Entra is often the same as the UPS,
     and is mapped to the Drupal email field.</p>';
 
-    $form['mandatory_mappings_html'] = [
+    $form['entrauser_settings']['mandatory_mappings_html'] = [
     '#type' => 'markup',
     '#markup' => $this->t($mandatory_mappings_message),
     ];
 
-    // Start of Entra settings fieldset
-    $form['entra_fieldmapping_user_fieldset'] = [
-      '#type' => 'fieldset',
-      '#title' => $this->t('Field mapping for Drupal user entity'),
-    ];
-
-    // Add a select element for entity type to map to, per now only user is supported.
-    $entity_options = ['user' => 'User', 'node' => 'Node'];
-
-    $form['entrauser_entities'] = [
-      '#type' => 'radios',
-      '#title' => $this->t('Map Entra users to Drupal entity'),
-      '#options' => $entity_options,
-      '#default_value' => 'user',
-      '#multiple' => FALSE,
-      '#description' => $this->t('Select which Drupal entities the new users should be added to (per now only user is supported)'),
-      '#attributes' => ['disabled' => ['node']],
-    ];
 
     // Add field mappings, to map Entra data to Drupal fields of selected entity
     // Fields coming from Entra:
@@ -178,7 +195,7 @@ class SyncSettingsForm extends ConfigFormBase {
      */
     // Create the actual mapping fields
     foreach ($entra_fields as $entra_field_key => $entra_field_label) {
-      $form['entra_fieldmapping_user' . $entra_field_key] = [
+      $form['entrauser_settings']['user_field_to_' . $entra_field_key] = [
         '#type' => 'select',
         '#title' => $this->t('Map Entra field: @entra_field', ['@entra_field' => $entra_field_label]),
         '#options' => $drupal_user_field_options,
@@ -196,7 +213,7 @@ class SyncSettingsForm extends ConfigFormBase {
       $role_options[$role_id] = $role->label();
     };
 
-    $form['modify_entrauser_roles'] = [
+    $form['entrauser_settings']['modify_entrauser_roles'] = [
       '#type' => 'select',
       '#title' => $this->t('Modify roles on Entra users'),
       '#options' => $role_options,
@@ -208,7 +225,7 @@ class SyncSettingsForm extends ConfigFormBase {
     // Add a select element to chose initial state of the imported user.
     $user_status_options = ['blocked' => 'Blocked', 'active' => 'Active'];
 
-    $form['entrauser_status'] = [
+    $form['entrauser_settings']['entrauser_status'] = [
       '#type' => 'radios',
       '#title' => $this->t('Initial state of imported user'),
       '#options' => $user_status_options,
@@ -216,6 +233,15 @@ class SyncSettingsForm extends ConfigFormBase {
       '#multiple' => FALSE,
       '#description' => $this->t('Select wether the user should be imported as blocked or active. Note that if active welcome e-mails may be sent out.'),
     ];
+
+    // $form['drupaluser_settings']['deyo'] = [
+    //   '#type' => 'radios',
+    //   '#title' => $this->t('lalal'),
+    //   '#options' => $user_status_options,
+    //   '#default_value' => 'blocked',
+    //   '#multiple' => FALSE,
+    //   '#description' => $this->t('Select wether the user should be imported as blocked or active. Note that if active welcome e-mails may be sent out.'),
+    // ];
 
     return parent::buildForm($form, $form_state);
   }
