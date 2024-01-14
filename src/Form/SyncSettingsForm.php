@@ -2,7 +2,6 @@
 
 namespace Drupal\entrasync\Form;
 
-use Drupal\Core\Entity\EntityFieldManager;
 use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Form\ConfigFormBase;
@@ -190,15 +189,19 @@ class SyncSettingsForm extends ConfigFormBase {
     }
 
     /**
-     * @todo Nested form structure not working, need to figure out..
+     * Create unique form items per field mapping. With previous mapping as default, if set.
      *
      */
-    // Create the actual mapping fields
+    $stored_mappings = $config->get('user_field_mapping');
     foreach ($entra_fields as $entra_field_key => $entra_field_label) {
+      // Check if there's a stored mapping for this field.
+      $default_value = isset($stored_mappings[$entra_field_key]) ? $stored_mappings[$entra_field_key] : NULL;
+
       $form['entrauser_settings']['user_field_to_' . $entra_field_key] = [
         '#type' => 'select',
         '#title' => $this->t('Map Entra field: @entra_field', ['@entra_field' => $entra_field_label]),
         '#options' => $drupal_user_field_options,
+        '#default_value' => $default_value,
         '#empty_option' => $this->t('- Select a Drupal field -'),
       ];
     }
@@ -282,8 +285,13 @@ class SyncSettingsForm extends ConfigFormBase {
 
     // Role settings handling
     $modify_entrauser_roles = $form_state->getValue('modify_entrauser_roles');
-    $modify_drupaluser_roles = $form_state->getValue('modify_drupaluser_roles');
     $modify_entrauser_roles = empty($modify_entrauser_roles) ? [] : $modify_entrauser_roles;
+
+    /**
+     * @todo This has no corresponding settings field
+     *
+     */
+    $modify_drupaluser_roles = $form_state->getValue('modify_drupaluser_roles');
     $modify_drupaluser_roles = empty($modify_drupaluser_roles) ? [] : $modify_drupaluser_roles;
 
     $config->set('modify_entrauser_roles', array_keys($modify_entrauser_roles));

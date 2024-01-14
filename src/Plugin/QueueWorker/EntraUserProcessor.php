@@ -88,11 +88,24 @@ class EntraUserProcessor extends QueueWorkerBase implements ContainerFactoryPlug
         // Create user account.
         $user = User::create();
 
-        // Mandatory settings.
+        // Set mandatory fields.
         $user->setPassword($this->passwordGenerator->generate());
         $user->enforceIsNew();
         $user->setEmail($data['email']);
         $user->setUsername($data['userprincipalname']);
+
+        // Set custom fields
+        $user_field_mapping = $this->config->get('user_field_mapping');
+        foreach ($user_field_mapping as $entra_field => $drupal_field) {
+          if (isset($data[$entra_field]) && $data[$entra_field] !== '') {
+            // If the field value is an array, flatten it to a comma-separated string
+            $field_value = is_array($data[$entra_field]) ? implode(', ', $data[$entra_field]) : $data[$entra_field];
+            // Assign the value from $data to the corresponding field in $user.
+            // Make sure to handle different field types appropriately.
+            $this->logger->notice($drupal_field . ' and ' . $field_value);
+            $user->set($drupal_field, $field_value);
+          }
+        }
 
         // Add roles to the new user.
         foreach ($roles_to_modify as $role_id) {
