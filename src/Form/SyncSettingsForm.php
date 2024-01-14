@@ -306,14 +306,12 @@ class SyncSettingsForm extends ConfigFormBase {
     $config->set('mapped_drupal_entities', $mapped_drupal_entity);
 
     // Entra fields to Drupal fields handling
-    // Extract the various Entra fields from the submitted data
-    $user_field_mapping_config = [];
-    foreach ($form_state->getValues() as $key => $value) {
-      if (strpos($key, 'user_field_to_') === 0) {
-        $entra_field = substr($key, strlen('user_field_to_'));
-        $user_field_mapping_config[$entra_field] = $value;
-      }
-    }
+    $user_field_mapping_config = $this->getUserFieldMappingsFromFormState($form_state);
+
+    // Remove any mappings that have an empty value
+    $user_field_mapping_config = array_filter($user_field_mapping_config, function ($value) {
+      return $value !== '';
+    });
     $config->set('user_field_mapping', $user_field_mapping_config);
 
     // Role settings handling

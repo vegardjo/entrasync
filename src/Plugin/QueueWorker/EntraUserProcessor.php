@@ -98,12 +98,13 @@ class EntraUserProcessor extends QueueWorkerBase implements ContainerFactoryPlug
         $user_field_mapping = $this->config->get('user_field_mapping');
         foreach ($user_field_mapping as $entra_field => $drupal_field) {
           if (isset($data[$entra_field]) && $data[$entra_field] !== '') {
-            // If the field value is an array, flatten it to a comma-separated string
+            // Tmp: Flatten array values to a comma-separated string, this is true for the businessPhones data
             $field_value = is_array($data[$entra_field]) ? implode(', ', $data[$entra_field]) : $data[$entra_field];
-            // Assign the value from $data to the corresponding field in $user.
-            // Make sure to handle different field types appropriately.
-            $this->logger->notice($drupal_field . ' and ' . $field_value);
-            $user->set($drupal_field, $field_value);
+            if ($user->hasField($drupal_field)) {
+              $user->set($drupal_field, $field_value);
+            } else {
+              $this->logger->error('The field ' . $drupal_field . ' does not exist on the user entity.');
+            }
           }
         }
 
@@ -130,15 +131,6 @@ class EntraUserProcessor extends QueueWorkerBase implements ContainerFactoryPlug
 
         // Restore original email notification settings.
         $this->configFactory->getEditable('user.settings')->set('notify', $original_mail_notify)->save();
-
-
-        /**
-        * @todo This has a setting that is not respected yet
-        */
-        // Custom user fields.
-        $user->set('field_fornavn', $data['displayName']);
-        $user->set('field_etternavn', $data['givenname']);
-        $user->set('field_telefon', $data['mobilephone']);
 
         // Save user account.
         $user->save();
