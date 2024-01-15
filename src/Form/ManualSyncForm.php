@@ -126,7 +126,6 @@ class ManualSyncForm extends FormBase implements ContainerInjectionInterface {
    */
   public function getStatus(array &$form, FormStateInterface $form_state) {
     $this->messenger->addStatus($this->entraSync->getStatus());
-    $this->logger->notice('yola');
   }
 
   /**

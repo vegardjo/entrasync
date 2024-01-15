@@ -125,17 +125,9 @@ class EntraUserProcessor extends QueueWorkerBase implements ContainerFactoryPlug
         // Default state is blocked.
         if ($this->config->get('entrauser_status') === 'active') {
           $user->activate();
-          if (!$this->config->get('send_mail_on_activate')) {
-            // If don't send email:
-            // Temporarily disable email notification.
-            $original_mail_notify = $this->configFactory->getEditable('user.settings')->get('notify');
-            $this->configFactory->getEditable('user.settings')->set('notify', 0)->save();
-
-            // Save user.
-            $user->save();
-
-            // Restore original email notification settings.
-            $this->configFactory->getEditable('user.settings')->set('notify', $original_mail_notify)->save();
+          $user->save();
+          if ($this->config->get('send_mail_on_activate')) {
+            _user_mail_notify('register_admin_created', $user);
           }
         }
         else {

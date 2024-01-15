@@ -132,13 +132,14 @@ class EntraSync {
     // Implementing the Statuses
     // These statuses can be implemented in the getStatus method of your synchronization class or a similar utility. Depending on your system's complexity, you might also need additional methods or services to gather this information. Remember, presenting this data in a clear, concise, and user-friendly manner in the Drupal admin interface is key to its usefulness.
 
-    $entraUserCount = '33';
-    $drupalUserCount = '53';
+    // $entraUserCount = '33';
+    // $drupalUserCount = '53';
 
-    return [
-      'entraUserCount' => $entraUserCount,
-      'drupalUserCount' => $drupalUserCount,
-    ];
+    // return [
+    //   'entraUserCount' => $entraUserCount,
+    //   'drupalUserCount' => $drupalUserCount,
+    // ];
+
   }
 
   /**
