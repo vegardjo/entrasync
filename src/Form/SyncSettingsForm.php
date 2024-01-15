@@ -254,7 +254,7 @@ class SyncSettingsForm extends ConfigFormBase {
       '#options' => $user_status_options,
       '#default_value' => 'blocked',
       '#multiple' => FALSE,
-      '#description' => $this->t('Select wether the user should be imported as blocked or active. Note that if active welcome e-mails may be sent out.'),
+      '#description' => $this->t('Select wether the user should be created as blocked or active account.'),
     ];
 
     $form['entrauser_settings']['send_mail_on_activate'] = [
@@ -266,7 +266,9 @@ class SyncSettingsForm extends ConfigFormBase {
           ':input[name="entrauser_status"]' => ['value' => 'active'],
         ],
       ],
-      '#description' => $this->t('By default your system will send a welcome mail to new users. This is deactivated by default here. Check to restore default functionality and send welcome e-mails.'),
+      '#description' => $this->t('Enable to send the Welcome (new user created by administrator) e-mail when account is created.
+                                  Edit the e-mail in <a href=":link">Account settings</a>',
+                                [':link' => Url::fromRoute('entity.user.admin_form')->toString()]),
     ];
 
     // $form['drupaluser_settings']['deyo'] = [
